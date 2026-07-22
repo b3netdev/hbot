@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {ReactNode} from 'react';
 import {
-  Pressable,
+  StatusBar,
+  StatusBarStyle,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
-  ViewStyle,
 } from 'react-native';
 import {
   NavigationProp,
@@ -12,23 +13,27 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import { ChevronLeft } from 'lucide-react-native';
+import {ArrowLeft} from 'lucide-react-native';
 
-interface HeaderProps {
-  title: string;
+type CommonHeaderProps = {
+  title?: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
-  rightComponent?: React.ReactNode;
-  containerStyle?: ViewStyle;
-}
+  titleSize?:number;
+  backgroundColor?: string;
+  statusBarStyle?: StatusBarStyle;
+  rightComponent?: ReactNode;
+};
 
 export default function Header({
   title,
-  showBackButton = false,
+  showBackButton = true,
   onBackPress,
+  backgroundColor = '#FFFFFF',
+  statusBarStyle = 'dark-content',
+  titleSize=20,
   rightComponent,
-  containerStyle,
-}: HeaderProps) {
+}: CommonHeaderProps) {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const handleBackPress = () => {
@@ -45,32 +50,32 @@ export default function Header({
   return (
     <SafeAreaView
       edges={['top']}
-      style={[styles.safeArea, containerStyle]}>
-      <View style={styles.container}>
-        <View style={styles.leftSection}>
+      style={[styles.safeArea, {backgroundColor}]}>
+      <StatusBar
+        barStyle={statusBarStyle}
+        backgroundColor={backgroundColor}
+      />
+
+      <View style={[styles.header, {backgroundColor}]}>
+        <View style={styles.sideContainer}>
           {showBackButton && (
-            <Pressable
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={handleBackPress}
-              style={({pressed}) => [
-                styles.backButton,
-                pressed && styles.pressedButton,
-              ]}
+              activeOpacity={0.7}
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel="Go back">
-              <ChevronLeft/>
-            </Pressable>
+              <ArrowLeft size={23} color="#101828" />
+            </TouchableOpacity>
           )}
         </View>
 
-        <View style={styles.titleSection}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
+        <Text style={[styles.title,{fontSize:titleSize}]} numberOfLines={1}>
+          {title}
+        </Text>
 
-        <View style={styles.rightSection}>
-          {rightComponent}
-        </View>
+        <View style={styles.sideContainer}>{rightComponent}</View>
       </View>
     </SafeAreaView>
   );
@@ -78,57 +83,34 @@ export default function Header({
 
 const styles = StyleSheet.create({
   safeArea: {
-    
+    width: '100%',
   },
-
-  container: {
-    height: 60,
+  header: {
+    minHeight: 64,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
 
-    
   },
-
-  leftSection: {
-    width: 48,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-
-  titleSection: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  rightSection: {
-    width: 48,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-
-  backButton: {
+  sideContainer: {
     width: 44,
-    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  pressedButton: {
-    opacity: 0.5,
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F2F4F7',
   },
-
-  backIcon: {
-    fontSize: 38,
-    lineHeight: 40,
-    color: '#111827',
-    fontWeight: '400',
-  },
-
   title: {
-    fontSize: 25,
-    fontWeight: '400',
-    color: '#111827',
+    flex: 1,
+    paddingHorizontal: 10,
+    textAlign: 'center',
+    color: '#101828',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
