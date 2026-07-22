@@ -51,7 +51,7 @@ export default function StateDropdown({
   const [search, setSearch] = useState('');
 
   const selectedState = useMemo(() => {
-    return states.find(
+    return states?.find(
       item => item.code.toUpperCase() === value?.toUpperCase(),
     );
   }, [states, value]);
@@ -92,7 +92,7 @@ export default function StateDropdown({
 
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      
 
       <Pressable
         onPress={openDropdown}
@@ -177,7 +177,7 @@ export default function StateDropdown({
                 style={styles.searchInput}
               />
 
-              {search.length > 0 ? (
+              {search?.length > 0 ? (
                 <Pressable
                   onPress={() => setSearch('')}
                   hitSlop={8}>
@@ -192,7 +192,7 @@ export default function StateDropdown({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={
-                filteredStates.length === 0
+                filteredStates?.length === 0
                   ? styles.emptyListContent
                   : styles.listContent
               }
@@ -253,7 +253,7 @@ export default function StateDropdown({
                   </Text>
 
                   <Text style={styles.emptyDescription}>
-                    Try another state name or code.
+                    Please select country properly
                   </Text>
                 </View>
               }
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   dropdownButton: {
     minHeight: 54,
     paddingHorizontal: 14,
-    borderWidth: 1,
+    borderBottomWidth:1,
     borderColor: '#D0D5DD',
     borderRadius: 10,
     backgroundColor: '#FFFFFF',

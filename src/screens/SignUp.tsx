@@ -31,6 +31,7 @@ import { colors } from '../utils/theme';
 import LinearGradient from 'react-native-linear-gradient';
 import CountryDropdown from '../components/CountryDropdown';
 import useCountry from '../hooks/useCountry';
+import StateDropdown from '../components/StateDropdown';
 
 type SignUpValues = {
     fullName: string;
@@ -157,11 +158,16 @@ export default function SignUp({ navigation }: SignUpScreenProps) {
         code: string;
         name: string;
     };
+    type State = {
+        code: string,
+        name: string
+    }
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { getCountryList, loading } = useCountry();
+    const { getCountryList, loading, getStates } = useCountry();
     const [countryList, setCountryList] = useState<Country[]>([])
     const [selectedCountry, setSelectedCountry] = useState('');
+    const [stateList, setStateList] = useState<State[]>()
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -171,6 +177,29 @@ export default function SignUp({ navigation }: SignUpScreenProps) {
 
         void fetchCountries();
     }, []);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchStateList = async () => {
+            if (!selectedCountry) {
+                setStateList([]);
+                return;
+            }
+
+            const data = await getStates(selectedCountry);
+
+            if (!cancelled) {
+                setStateList(data);
+            }
+        };
+
+        void fetchStateList();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedCountry]);
 
     const handleSignUp = async (
         values: SignUpValues,
@@ -224,7 +253,8 @@ export default function SignUp({ navigation }: SignUpScreenProps) {
                             handleBlur,
                             handleSubmit,
                             isSubmitting,
-                            setFieldValue
+                            setFieldValue,
+                            setFieldTouched
                         }) => (
                             <View>
                                 <InputField
@@ -297,16 +327,22 @@ export default function SignUp({ navigation }: SignUpScreenProps) {
                                     </View>
 
                                     <View style={styles.halfField}>
-                                        <InputField
-                                            label="State"
-                                            placeholder="State"
+                                        <StateDropdown
+                                            states={stateList!}
                                             value={values.state}
-                                            onChangeText={handleChange('state')}
-                                            onBlur={handleBlur('state')}
-                                            autoCapitalize="words"
-                                            icon={<MapPin size={20} color="#667085" />}
-                                            error={errors.state}
-                                            touched={touched.state}
+                                            onChange={stateCode => {
+                                                setFieldValue('state', stateCode);
+                                            }}
+                                            onBlur={() => {
+                                                setFieldTouched('state', true);
+                                            }}
+                                            touched={Boolean(touched.state)}
+                                            error={
+                                                touched.state && errors.state
+                                                    ? String(errors.state)
+                                                    : undefined
+                                            }
+                                            loading={loading}
                                         />
                                     </View>
                                 </View>

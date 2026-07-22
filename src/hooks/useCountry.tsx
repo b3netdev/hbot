@@ -38,29 +38,45 @@ export default function useCountry() {
         code: string,
         name: string
     }
-    const getStates = async (countryCode: string) => {
-        setLoading(true)
+    type StateOption = {
+        code: string;
+        name: string;
+    };
+
+    type StateResponse = Record<string, string>;
+
+    const getStates = async (
+        countryCode: string,
+    ): Promise<StateOption[]> => {
+        if (!countryCode) {
+            return [];
+        }
+
+        setLoading(true);
+
         try {
-            const res = await api.get(`services.php?action=get_states&country=${countryCode}`)
+            const res = await api.get<StateResponse>(
+                `services.php?action=get_states&country=${countryCode}`,
+            );
 
-            if (res.status === 200) {
-                return Object.entries(res.data).map(([code, name]) => ({
-                    code,
-                    name,
-                }));
+            if (res.status !== 200) {
+                return [];
             }
-        }
-        catch (error) {
 
+            return Object.entries(res.data).map(([code, name]) => ({
+                code,
+                name,
+            }));
+        } catch (error) {
+            console.log('Failed to fetch states:', error);
+            return [];
+        } finally {
+            setLoading(false);
         }
-        finally {
-            setLoading(false)
-        }
-    }
-
+    };
     return {
         loading,
         getCountryList,
-        getStates       
+        getStates
     };
 }
