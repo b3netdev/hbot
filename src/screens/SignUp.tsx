@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Alert,
     KeyboardAvoidingView,
@@ -29,6 +29,8 @@ import {
 import Header from '../components/Header';
 import { colors } from '../utils/theme';
 import LinearGradient from 'react-native-linear-gradient';
+import CountryDropdown from '../components/CountryDropdown';
+import useCountry from '../hooks/useCountry';
 
 type SignUpValues = {
     fullName: string;
@@ -150,9 +152,25 @@ function InputField({
     );
 }
 
-export default function SignUpScreen({ navigation }: SignUpScreenProps) {
+export default function SignUp({ navigation }: SignUpScreenProps) {
+    type Country = {
+        code: string;
+        name: string;
+    };
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const { getCountryList, loading } = useCountry();
+    const [countryList, setCountryList] = useState<Country[]>([])
+    const [selectedCountry, setSelectedCountry] = useState('');
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            const data = await getCountryList();
+            setCountryList(data);
+        };
+
+        void fetchCountries();
+    }, []);
 
     const handleSignUp = async (
         values: SignUpValues,
@@ -206,6 +224,7 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
                             handleBlur,
                             handleSubmit,
                             isSubmitting,
+                            setFieldValue
                         }) => (
                             <View>
                                 <InputField
@@ -248,6 +267,20 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
                                     touched={touched.phone}
                                 />
 
+
+                                <CountryDropdown
+                                    countryList={countryList}
+                                    value={values.country}
+                                    onChange={country => {
+                                        setFieldValue('country', country.code);
+                                        setSelectedCountry(country.code)
+                                    }}
+                                    error={
+                                        touched.country && errors.country
+                                            ? String(errors.country)
+                                            : undefined
+                                    }
+                                />
                                 <View style={styles.row}>
                                     <View style={styles.halfField}>
                                         <InputField
@@ -278,17 +311,6 @@ export default function SignUpScreen({ navigation }: SignUpScreenProps) {
                                     </View>
                                 </View>
 
-                                <InputField
-                                    label="Country"
-                                    placeholder="Enter your country"
-                                    value={values.country}
-                                    onChangeText={handleChange('country')}
-                                    onBlur={handleBlur('country')}
-                                    autoCapitalize="words"
-                                    icon={<Flag size={20} color="#667085" />}
-                                    error={errors.country}
-                                    touched={touched.country}
-                                />
 
                                 <InputField
                                     label="Password"
