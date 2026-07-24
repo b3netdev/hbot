@@ -12,6 +12,7 @@ import type { RootStackParamList } from './types';
 import Signin from '../screens/Signin';
 import SignUp from '../screens/SignUp';
 import Dashboard from '../screens/Dashboard/Dashboard';
+import DrawerNavigator from './DrawerNavigator';
 
 import {
     useAppDispatch,
@@ -79,8 +80,8 @@ export default function RootNavigator() {
                 }}>
                 {isLoggedIn ? (
                     <Stack.Screen
-                        name="Dashboard"
-                        component={Dashboard}
+                        name="Main"
+                        component={DrawerNavigator}
                     />
                 ) : (
                     <>
@@ -93,6 +94,7 @@ export default function RootNavigator() {
                             name="SignUp"
                             component={SignUp}
                         />
+                        
                     </>
                 )}
             </Stack.Navigator>
