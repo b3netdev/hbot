@@ -3,38 +3,37 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
-    StatusBar,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
-import { Formik } from 'formik';
+import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import {
-    ArrowLeft,
     Building2,
     Eye,
     EyeOff,
-    Flag,
     LockKeyhole,
     Mail,
-    MapPin,
     Phone,
     User,
 } from 'lucide-react-native';
-import Header from '../components/Header';
-import { colors } from '../utils/theme';
 import LinearGradient from 'react-native-linear-gradient';
+
+import Header from '../components/Header';
 import CountryDropdown from '../components/CountryDropdown';
-import useCountry from '../hooks/useCountry';
 import StateDropdown from '../components/StateDropdown';
+import Checkbox from '../components/CheckBox';
+import useCountry from '../hooks/useCountry';
+import useAppNavigation from '../hooks/useAppNavigation';
+import { colors } from '../utils/theme';
+import useAuth from '../hooks/useAuth';
 
 type SignUpValues = {
-    fullName: string;
+    full_name: string;
     email: string;
     phone: string;
     city: string;
@@ -44,15 +43,23 @@ type SignUpValues = {
     confirmPassword: string;
 };
 
-type SignUpScreenProps = {
-    navigation?: {
-        goBack: () => void;
-        navigate: (screen: string) => void;
-    };
+type Country = {
+    code: string;
+    name: string;
+};
+
+type State = {
+    code: string;
+    name: string;
+};
+
+type HbotUser = {
+    label: string;
+    key: string;
 };
 
 const initialValues: SignUpValues = {
-    fullName: '',
+    full_name: '',
     email: '',
     phone: '',
     city: '',
@@ -63,7 +70,7 @@ const initialValues: SignUpValues = {
 };
 
 const signUpSchema = Yup.object().shape({
-    fullName: Yup.string()
+    full_name: Yup.string()
         .trim()
         .min(3, 'Full name must contain at least 3 characters')
         .matches(
@@ -133,9 +140,11 @@ function InputField({
 
     return (
         <View style={styles.fieldContainer}>
-
-
-            <View style={[styles.inputWrapper, hasError && styles.inputError]}>
+            <View
+                style={[
+                    styles.inputWrapper,
+                    hasError && styles.inputError,
+                ]}>
                 <View style={styles.leftIcon}>{icon}</View>
 
                 <TextInput
@@ -145,29 +154,98 @@ function InputField({
                     {...inputProps}
                 />
 
-                {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
+                {rightIcon ? (
+                    <View style={styles.rightIcon}>{rightIcon}</View>
+                ) : null}
             </View>
 
-            {hasError && <Text style={styles.errorText}>{error}</Text>}
+            {hasError ? (
+                <Text style={styles.errorText}>{error}</Text>
+            ) : null}
         </View>
     );
 }
 
-export default function SignUp({ navigation }: SignUpScreenProps) {
-    type Country = {
-        code: string;
-        name: string;
-    };
-    type State = {
-        code: string,
-        name: string
-    }
+const checkBoxArray: HbotUser[] = [
+    {
+        label: 'HBOT Provider (Clinic, Doctor, or Business Owner)',
+        key: 'hbot_provider',
+    },
+    {
+        label:
+            'HBOT Consumer (Patient, Athlete, or Wellness Enthusiast)',
+        key: 'hbot_consumer',
+    },
+];
+
+export default function SignUp() {
+    const { HandleSignUp, loading: signUpLoading, } = useAuth()
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { getCountryList, loading, getStates } = useCountry();
-    const [countryList, setCountryList] = useState<Country[]>([])
+
+    const [showConfirmPassword, setShowConfirmPassword] =
+        useState(false);
+
+    const [countryList, setCountryList] = useState<Country[]>([]);
+
     const [selectedCountry, setSelectedCountry] = useState('');
-    const [stateList, setStateList] = useState<State[]>()
+
+    const [stateList, setStateList] = useState<State[]>([]);
+
+    const [hbotUser, setHbotUser] = useState<HbotUser>({
+        label: 'HBOT Provider (Clinic, Doctor, or Business Owner)',
+        key: 'hbot_provider',
+    });
+
+    const { getCountryList, loading, getStates } = useCountry();
+    const navigation = useAppNavigation();
+
+    const handleSignUp = async (
+        values: SignUpValues,
+        resetForm: () => void,
+    ) => {
+        const payload = {
+            action: "register",
+            full_name: values.full_name.trim(),
+            email: values.email.trim().toLowerCase(),
+            phone: values.phone.replace(/\D/g, ''),
+            city: values.city.trim(),
+            state: values.state.trim(),
+            password: values.password,
+            country: values.country.trim(),
+            [hbotUser.key]: "true",
+        };
+        const data = await HandleSignUp(payload)
+        if (data.action == "success") navigation.navigate("Signin")
+        if (data.action == "error") {
+            Alert.alert(data.response.data.message)
+        }
+
+
+        // Replace this with your registration API call.
+        Alert.alert('Success', 'Your account has been created.');
+
+        resetForm();
+    };
+
+    const formik = useFormik<SignUpValues>({
+        initialValues,
+        validationSchema: signUpSchema,
+
+        onSubmit: async (values, actions) => {
+            await handleSignUp(values, actions.resetForm);
+        },
+    });
+
+    const {
+        values,
+        errors,
+        touched,
+        handleChange,
+        handleBlur,
+        handleSubmit,
+        setFieldValue,
+        setFieldTouched,
+    } = formik;
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -201,237 +279,218 @@ export default function SignUp({ navigation }: SignUpScreenProps) {
         };
     }, [selectedCountry]);
 
-    const handleSignUp = async (
-        values: SignUpValues,
-        resetForm: () => void,
-    ) => {
-        const payload = {
-            ...values,
-            fullName: values.fullName.trim(),
-            email: values.email.trim().toLowerCase(),
-            phone: values.phone.replace(/\D/g, ''),
-            city: values.city.trim(),
-            state: values.state.trim(),
-            country: values.country.trim(),
-        };
-
-        console.log('Sign-up payload:', payload);
-
-        // Replace this with your registration API call.
-        Alert.alert('Success', 'Your account has been created.');
-        resetForm();
-    };
-
     return (
         <View style={{ flex: 1, backgroundColor: colors.WHITE }}>
+            <Header title="Create Your Account" />
 
-            <Header
-                title='Create Your Account'
-            />
             <KeyboardAvoidingView
                 style={styles.flex}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}>
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}>
-                    {/* <View style={styles.header}>
-                        <Text style={styles.title}>Create Your Account</Text>
-                    </View> */}
+                    <View>
+                        <InputField
+                            label="Full Name"
+                            placeholder="Enter your full name"
+                            value={values.full_name}
+                            onChangeText={handleChange('full_name')}
+                            onBlur={handleBlur('full_name')}
+                            autoCapitalize="words"
+                            autoComplete="name"
+                            icon={<User size={20} color="#667085" />}
+                            error={errors.full_name}
+                            touched={touched.full_name}
+                        />
 
-                    <Formik
-                        initialValues={initialValues}
-                        validationSchema={signUpSchema}
-                        onSubmit={(values, actions) =>
-                            handleSignUp(values, actions.resetForm)
-                        }>
-                        {({
-                            values,
-                            errors,
-                            touched,
-                            handleChange,
-                            handleBlur,
-                            handleSubmit,
-                            isSubmitting,
-                            setFieldValue,
-                            setFieldTouched
-                        }) => (
-                            <View>
+                        <InputField
+                            label="Email"
+                            placeholder="Enter your email address"
+                            value={values.email}
+                            onChangeText={handleChange('email')}
+                            onBlur={handleBlur('email')}
+                            keyboardType="email-address"
+                            autoComplete="email"
+                            icon={<Mail size={20} color="#667085" />}
+                            error={errors.email}
+                            touched={touched.email}
+                        />
+
+                        <InputField
+                            label="Phone Number"
+                            placeholder="Enter your phone number"
+                            value={values.phone}
+                            onChangeText={handleChange('phone')}
+                            onBlur={handleBlur('phone')}
+                            keyboardType="phone-pad"
+                            autoComplete="tel"
+                            maxLength={15}
+                            icon={<Phone size={20} color="#667085" />}
+                            error={errors.phone}
+                            touched={touched.phone}
+                        />
+
+                        <CountryDropdown
+                            countryList={countryList}
+                            value={values.country}
+                            onChange={country => {
+                                setFieldValue('country', country.code);
+                                setSelectedCountry(country.code);
+                            }}
+                            error={
+                                touched.country && errors.country
+                                    ? String(errors.country)
+                                    : undefined
+                            }
+                        />
+
+                        <View style={styles.row}>
+                            <View style={styles.halfField}>
                                 <InputField
-                                    label="Full Name"
-                                    placeholder="Enter your full name"
-                                    value={values.fullName}
-                                    onChangeText={handleChange('fullName')}
-                                    onBlur={handleBlur('fullName')}
+                                    label="City"
+                                    placeholder="City"
+                                    value={values.city}
+                                    onChangeText={handleChange('city')}
+                                    onBlur={handleBlur('city')}
                                     autoCapitalize="words"
-                                    autoComplete="name"
-                                    icon={<User size={20} color="#667085" />}
-                                    error={errors.fullName}
-                                    touched={touched.fullName}
+                                    icon={
+                                        <Building2 size={20} color="#667085" />
+                                    }
+                                    error={errors.city}
+                                    touched={touched.city}
                                 />
+                            </View>
 
-                                <InputField
-                                    label="Email"
-                                    placeholder="Enter your email address"
-                                    value={values.email}
-                                    onChangeText={handleChange('email')}
-                                    onBlur={handleBlur('email')}
-                                    keyboardType="email-address"
-                                    autoComplete="email"
-                                    icon={<Mail size={20} color="#667085" />}
-                                    error={errors.email}
-                                    touched={touched.email}
-                                />
-
-                                <InputField
-                                    label="Phone Number"
-                                    placeholder="Enter your phone number"
-                                    value={values.phone}
-                                    onChangeText={handleChange('phone')}
-                                    onBlur={handleBlur('phone')}
-                                    keyboardType="phone-pad"
-                                    autoComplete="tel"
-                                    maxLength={15}
-                                    icon={<Phone size={20} color="#667085" />}
-                                    error={errors.phone}
-                                    touched={touched.phone}
-                                />
-
-
-                                <CountryDropdown
-                                    countryList={countryList}
-                                    value={values.country}
-                                    onChange={country => {
-                                        setFieldValue('country', country.code);
-                                        setSelectedCountry(country.code)
+                            <View style={styles.halfField}>
+                                <StateDropdown
+                                    states={stateList}
+                                    value={values.state}
+                                    disabled={selectedCountry === ''}
+                                    onChange={stateCode => {
+                                        setFieldValue('state', stateCode);
                                     }}
+                                    onBlur={() => {
+                                        setFieldTouched('state', true);
+                                    }}
+                                    touched={Boolean(touched.state)}
                                     error={
-                                        touched.country && errors.country
-                                            ? String(errors.country)
+                                        touched.state && errors.state
+                                            ? String(errors.state)
                                             : undefined
                                     }
+                                    loading={loading}
                                 />
-                                <View style={styles.row}>
-                                    <View style={styles.halfField}>
-                                        <InputField
-                                            label="City"
-                                            placeholder="City"
-                                            value={values.city}
-                                            onChangeText={handleChange('city')}
-                                            onBlur={handleBlur('city')}
-                                            autoCapitalize="words"
-                                            icon={<Building2 size={20} color="#667085" />}
-                                            error={errors.city}
-                                            touched={touched.city}
-                                        />
-                                    </View>
-
-                                    <View style={styles.halfField}>
-                                        <StateDropdown
-                                            states={stateList!}
-                                            value={values.state}
-                                            onChange={stateCode => {
-                                                setFieldValue('state', stateCode);
-                                            }}
-                                            onBlur={() => {
-                                                setFieldTouched('state', true);
-                                            }}
-                                            touched={Boolean(touched.state)}
-                                            error={
-                                                touched.state && errors.state
-                                                    ? String(errors.state)
-                                                    : undefined
-                                            }
-                                            loading={loading}
-                                        />
-                                    </View>
-                                </View>
-
-
-                                <InputField
-                                    label="Password"
-                                    placeholder="Enter your password"
-                                    value={values.password}
-                                    onChangeText={handleChange('password')}
-                                    onBlur={handleBlur('password')}
-                                    secureTextEntry={!showPassword}
-                                    autoComplete="new-password"
-                                    icon={<LockKeyhole size={20} color="#667085" />}
-                                    error={errors.password}
-                                    touched={touched.password}
-                                    rightIcon={
-                                        <TouchableOpacity
-                                            onPress={() => setShowPassword(previous => !previous)}
-                                            accessibilityLabel={
-                                                showPassword ? 'Hide password' : 'Show password'
-                                            }>
-                                            {showPassword ? (
-                                                <EyeOff size={21} color="#667085" />
-                                            ) : (
-                                                <Eye size={21} color="#667085" />
-                                            )}
-                                        </TouchableOpacity>
-                                    }
-                                />
-
-                                <InputField
-                                    label="Confirm Password"
-                                    placeholder="Re-enter your password"
-                                    value={values.confirmPassword}
-                                    onChangeText={handleChange('confirmPassword')}
-                                    onBlur={handleBlur('confirmPassword')}
-                                    secureTextEntry={!showConfirmPassword}
-                                    autoComplete="new-password"
-                                    icon={<LockKeyhole size={20} color="#667085" />}
-                                    error={errors.confirmPassword}
-                                    touched={touched.confirmPassword}
-                                    rightIcon={
-                                        <TouchableOpacity
-                                            onPress={() =>
-                                                setShowConfirmPassword(previous => !previous)
-                                            }
-                                            accessibilityLabel={
-                                                showConfirmPassword
-                                                    ? 'Hide confirm password'
-                                                    : 'Show confirm password'
-                                            }>
-                                            {showConfirmPassword ? (
-                                                <EyeOff size={21} color="#667085" />
-                                            ) : (
-                                                <Eye size={21} color="#667085" />
-                                            )}
-                                        </TouchableOpacity>
-                                    }
-                                />
-
-
-                                <TouchableOpacity
-                                    onPress={() => navigation?.navigate('SignUp')}
-                                    activeOpacity={0.85}
-                                    style={styles.signUpButton}>
-                                    <LinearGradient
-                                        colors={[...colors.GRADIENT]}
-                                        locations={[0, 0.65, 1]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.gradient}>
-                                        <Text style={styles.signUpButtonText}>Sign Up</Text>
-                                    </LinearGradient>
-                                </TouchableOpacity>
-
-                                <View style={styles.loginContainer}>
-                                    <Text style={styles.loginText}>
-                                        Already have an account?{' '}
-                                    </Text>
-
-                                    <TouchableOpacity
-                                        onPress={() => navigation?.navigate('SignIn')}>
-                                        <Text style={styles.loginLink}>Sign In</Text>
-                                    </TouchableOpacity>
-                                </View>
                             </View>
-                        )}
-                    </Formik>
+                        </View>
+
+                        <InputField
+                            label="Password"
+                            placeholder="Enter your password"
+                            value={values.password}
+                            onChangeText={handleChange('password')}
+                            onBlur={handleBlur('password')}
+                            secureTextEntry={!showPassword}
+                            autoComplete="new-password"
+                            icon={<LockKeyhole size={20} color="#667085" />}
+                            error={errors.password}
+                            touched={touched.password}
+                            rightIcon={
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        setShowPassword(previous => !previous)
+                                    }
+                                    accessibilityLabel={
+                                        showPassword
+                                            ? 'Hide password'
+                                            : 'Show password'
+                                    }>
+                                    {showPassword ? (
+                                        <EyeOff size={21} color="#667085" />
+                                    ) : (
+                                        <Eye size={21} color="#667085" />
+                                    )}
+                                </TouchableOpacity>
+                            }
+                        />
+
+                        <InputField
+                            label="Confirm Password"
+                            placeholder="Re-enter your password"
+                            value={values.confirmPassword}
+                            onChangeText={handleChange('confirmPassword')}
+                            onBlur={handleBlur('confirmPassword')}
+                            secureTextEntry={!showConfirmPassword}
+                            autoComplete="new-password"
+                            icon={<LockKeyhole size={20} color="#667085" />}
+                            error={errors.confirmPassword}
+                            touched={touched.confirmPassword}
+                            rightIcon={
+                                <TouchableOpacity
+                                    onPress={() =>
+                                        setShowConfirmPassword(previous => !previous)
+                                    }
+                                    accessibilityLabel={
+                                        showConfirmPassword
+                                            ? 'Hide confirm password'
+                                            : 'Show confirm password'
+                                    }>
+                                    {showConfirmPassword ? (
+                                        <EyeOff size={21} color="#667085" />
+                                    ) : (
+                                        <Eye size={21} color="#667085" />
+                                    )}
+                                </TouchableOpacity>
+                            }
+                        />
+
+                        {checkBoxArray.map(data => (
+                            <Checkbox
+                                key={data.key}
+                                checked={hbotUser.key === data.key}
+                                onChange={() => setHbotUser(data)}
+                                checkboxStyle={{}}
+                                style={{
+                                    marginTop: 2,
+                                    marginBottom: 6,
+                                }}
+                                label={data.label}
+                            />
+                        ))}
+
+                        <TouchableOpacity
+                            onPress={() => handleSubmit()}
+                            activeOpacity={0.85}
+                            disabled={signUpLoading}
+                            style={[styles.signUpButton, { opacity: signUpLoading ? 0.8 : 1 }]}>
+
+                            <LinearGradient
+                                colors={[...colors.GRADIENT]}
+                                locations={[0, 0.65, 1]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.gradient}>
+                                <Text style={[styles.signUpButtonText, { opacity: signUpLoading ? 0.8 : 1 }]}>
+                                    {
+                                        signUpLoading ? "Signing up..." : "Sign UP"
+                                    }
+
+                                </Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <View style={styles.loginContainer}>
+                            <Text style={styles.loginText}>
+                                Already have an account?{' '}
+                            </Text>
+
+                            <TouchableOpacity
+                                onPress={() => navigation.navigate('Signin')}>
+                                <Text style={styles.loginLink}>Sign In</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
         </View>
@@ -526,6 +585,7 @@ const styles = StyleSheet.create({
     signUpButton: {
         borderRadius: 50,
         overflow: 'hidden',
+        marginTop: 20,
     },
     disabledButton: {
         opacity: 0.65,

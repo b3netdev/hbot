@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ImageBackground,
@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Keyboard,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -23,13 +24,15 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import useAuth from '../hooks/useAuth';
+
 
 import { colors } from '../utils/theme';
 
 const SignInBg = require('../assets/sign-in-bg.png');
 
 type SignInValues = {
-  email: string;
+  username: string;
   password: string;
 };
 
@@ -49,15 +52,14 @@ type InputFieldProps = {
 } & React.ComponentProps<typeof TextInput>;
 
 const initialValues: SignInValues = {
-  email: '',
+  username: '',
   password: '',
 };
 
 const signInSchema = Yup.object({
-  email: Yup.string()
+  username: Yup.string()
     .trim()
-    .email('Enter a valid email address')
-    .required('Email is required'),
+    .required('Email or username is required'),
 
   password: Yup.string()
     .min(8, 'Password must contain at least 8 characters')
@@ -116,33 +118,22 @@ export default function Signin({
 }: SignInScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const passwordInputRef = useRef<TextInput>(null);
+  const { HandleSignIn, loading } = useAuth()
+  const [errorText, setErrorText] = useState<string>("")
 
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
 
   const handleSignIn = async (values: SignInValues) => {
+    Keyboard.dismiss()
     const payload = {
-      email: values.email.trim().toLowerCase(),
+      username: values.username.trim().toLowerCase(),
       password: values.password,
+      action: "login"
     };
+    const data = await HandleSignIn(payload)
+    if (data.action == 'error') setErrorText(data.message)
 
-    try {
-      console.log('Sign-in payload:', payload);
-
-
-
-      Alert.alert(
-        'Success',
-        'You have signed in successfully.',
-      );
-    } catch (error) {
-      console.error('Sign-in error:', error);
-
-      Alert.alert(
-        'Sign In Failed',
-        'Unable to sign in. Please check your details and try again.',
-      );
-    }
   };
 
   const formik = useFormik<SignInValues>({
@@ -150,6 +141,10 @@ export default function Signin({
     validationSchema: signInSchema,
     onSubmit: handleSignIn,
   });
+  useEffect(() => {
+    if (errorText !== " ") setErrorText("")
+    else return
+  }, [formik.handleChange])
 
   return (
     <ImageBackground
@@ -205,14 +200,14 @@ export default function Signin({
             <View style={styles.formCard}>
               <InputField
                 label="Email Address"
-                placeholder="Enter your email address"
-                value={formik.values.email}
-                onChangeText={formik.handleChange('email')}
-                onBlur={formik.handleBlur('email')}
-                keyboardType="email-address"
+                placeholder="Enter your username address"
+                value={formik.values.username}
+                onChangeText={formik.handleChange('username')}
+                onBlur={formik.handleBlur('username')}
+                keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
-                autoComplete="email"
+                autoComplete="username"
                 textContentType="emailAddress"
                 returnKeyType="next"
                 blurOnSubmit={false}
@@ -220,8 +215,8 @@ export default function Signin({
                   passwordInputRef.current?.focus();
                 }}
                 icon={<Mail size={20} color="#667085" />}
-                error={formik.errors.email}
-                touched={formik.touched.email}
+                error={formik.errors.username}
+                touched={formik.touched.username}
               />
 
               <InputField
@@ -272,7 +267,6 @@ export default function Signin({
                   </TouchableOpacity>
                 }
               />
-
               <TouchableOpacity
                 style={styles.forgotPasswordButton}
                 onPress={() => {
@@ -307,10 +301,13 @@ export default function Signin({
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
+              <View style={{ height: 50, width: width - 30, marginTop: 20, alignItems: 'center', }}>
+                <Text style={{ color: colors.ERROR, fontWeight: '600' }}>{errorText}</Text>
+              </View>
             </View>
           </View>
 
-          
+
           <View style={styles.bottomSection}>
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>
