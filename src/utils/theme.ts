@@ -10,7 +10,7 @@ export const colors = {
   BACKGROUND: '#FFFFFF',
   ERROR: '#E53935',
 
-  GRADIENT: ['#1264E4', '#18CFAB', '#18CFAB'] as const,
+  GRADIENT: ['#0dc3ff', '#007ba8', ] as const,
   BACKGROUND_GRADIENT:[
     '#2b384b',
     '#E5E6FF',

@@ -3,6 +3,8 @@ export type RootStackParamList = {
   SignUp: undefined;
   Main: undefined;
   Dashboard: undefined;
+  Resources: undefined;
+  EducationalResources: undefined;
 };
 
 export type DrawerParamList = {

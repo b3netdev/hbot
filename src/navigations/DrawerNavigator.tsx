@@ -11,6 +11,7 @@ import Dashboard from '../screens/Dashboard/Dashboard';
 import Profile from '../screens/Dashboard/Profile';
 import SettingsScreen from '../screens/Dashboard/Settings';
 import { colors } from '../utils/theme';
+import LinearGradient from 'react-native-linear-gradient';
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
@@ -20,16 +21,28 @@ export default function DrawerNavigator() {
             initialRouteName="Dashboard"
             screenOptions={{
                 headerShown: true,
-                headerStatusBarHeight:60,
+                headerStatusBarHeight: 60,
                 headerTitleAlign: 'left',
                 headerTintColor: colors.WHITE,
-                  headerTitle: () => null,
+                headerTitle: () => null,
+
+                headerBackground: () => (
+                    <LinearGradient
+                        colors={[...colors.GRADIENT]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{
+                            flex: 1,
+                            borderBottomLeftRadius: 25,
+                            borderBottomRightRadius: 25,
+                        }}
+                    />
+                ),
+
                 headerStyle: {
-                    backgroundColor: colors.PRIMARY,
-                    borderBottomLeftRadius:25,
-                    borderBottomRightRadius:25
-                    
+                    backgroundColor: 'transparent',
                 },
+
                 headerShadowVisible: false,
 
                 drawerPosition: 'right',
@@ -51,7 +64,7 @@ export default function DrawerNavigator() {
 
                 drawerStyle: {
                     width: 280,
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: colors.WHITE,
                 },
             }}>
             <Drawer.Screen

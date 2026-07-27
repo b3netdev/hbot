@@ -20,6 +20,8 @@ import {
 } from '../redux/hooks/hooks';
 import { setCredentials } from '../redux/slicers/authSlicer';
 import { colors } from '../utils/theme';
+import Resources from '../screens/Resources';
+import EducationalResources from '../screens/EducationalResources';
 
 const Stack =
     createNativeStackNavigator<RootStackParamList>();
@@ -79,10 +81,20 @@ export default function RootNavigator() {
                     headerShown: false,
                 }}>
                 {isLoggedIn ? (
-                    <Stack.Screen
-                        name="Main"
-                        component={DrawerNavigator}
-                    />
+                    <>
+                        <Stack.Screen
+                            name="Main"
+                            component={DrawerNavigator}
+                        />
+                        <Stack.Screen
+                            name="Resources"
+                            component={Resources}
+                        />
+                        <Stack.Screen
+                            name="EducationalResources"
+                            component={EducationalResources}
+                        />
+                    </>
                 ) : (
                     <>
                         <Stack.Screen
@@ -94,7 +106,10 @@ export default function RootNavigator() {
                             name="SignUp"
                             component={SignUp}
                         />
-                        
+                        <Stack.Screen
+                            name="SignUp"
+                            component={SignUp}
+                        />
                     </>
                 )}
             </Stack.Navigator>

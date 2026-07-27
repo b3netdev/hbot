@@ -15,8 +15,8 @@ import {
 import Banner1 from "../../assets/banner-1.png";
 import Banner2 from "../../assets/banner-2.png"
 import { colors } from '../../utils/theme';
-import { Bot, CalendarCheck2, LifeBuoy } from 'lucide-react-native';
-
+import { Bot, CalendarCheck2, LifeBuoy, Navigation } from 'lucide-react-native';
+import useAppNavigation from '../../hooks/useAppNavigation';
 type Banner = {
     id: number;
     image: ImageSourcePropType;
@@ -42,17 +42,20 @@ const tabcontent = [
     {
         id: 1,
         icon: Bot,
-        title: "My HBOT Companion"
+        title: "My HBOT Companion",
+        path: "Resources"
     },
     {
         id: 1,
         icon: CalendarCheck2,
-        title: "My Hbot Schedule"
+        title: "My Hbot Schedule",
+        path: "Resources"
     },
     {
         id: 1,
         icon: LifeBuoy,
-        title: "Resources"
+        title: "Resources",
+        path: "Resources"
     },
 ]
 
@@ -64,6 +67,7 @@ export default function Dashboard() {
 
     const bannerWidth = width - 32;
     const snapInterval = bannerWidth + BANNER_GAP;
+    const navigation = useAppNavigation()
 
 
     useEffect(() => {
@@ -109,6 +113,11 @@ export default function Dashboard() {
         );
     };
 
+    const HandleHomeNavigation = (data: any) => {
+        navigation.navigate(data.path)
+
+    }
+
 
     return (
         <View style={styles.container}>
@@ -150,19 +159,17 @@ export default function Dashboard() {
             <View style={styles.tabbox}>
                 <Text style={styles.tabboxtext}>Explore Our Features</Text>
                 <View style={styles.featureGrid}>
-                    {tabcontent.map(data => {
+                    {tabcontent.map((data, index) => {
                         const Icon = data.icon;
 
                         return (
                             <Pressable
-                                key={data.id}
+                                key={index}
                                 style={({ pressed }) => [
                                     styles.featureCard,
                                     pressed && styles.featureCardPressed,
                                 ]}
-                                onPress={() => {
-                                    // Handle navigation here
-                                }}>
+                                onPress={() => HandleHomeNavigation(data)}>
                                 <View style={styles.iconContainer}>
                                     <Icon
                                         size={27}
@@ -233,60 +240,60 @@ const styles = StyleSheet.create({
         fontSize: 16,
         opacity: 0.8
     },
-     featureGrid: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingHorizontal: 16,
-    marginTop: 14,
-    gap: 10,
-  },
-
-  featureCard: {
-    flex: 1,
-    minHeight: 128,
-    paddingHorizontal: 8,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    backgroundColor: colors.WHITE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8EEF6',
-
-    shadowColor: '#101828',
-    shadowOffset: {
-      width: 0,
-      height: 3,
+    featureGrid: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        paddingHorizontal: 16,
+        marginTop: 14,
+        gap: 10,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
 
-  featureCardPressed: {
-    opacity: 0.85,
-    transform: [{scale: 0.98}],
-  },
+    featureCard: {
+        flex: 1,
+        minHeight: 128,
+        paddingHorizontal: 8,
+        paddingVertical: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
 
-  iconContainer: {
-    width: 50,
-    height: 50,
-    marginBottom: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 15,
-    backgroundColor: '#EAF2FF',
-  },
+        backgroundColor: colors.WHITE,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#E8EEF6',
 
-  featureTitle: {
-    width: '100%',
-    color: '#344054',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    flexShrink: 1,
-  },
+        shadowColor: '#101828',
+        shadowOffset: {
+            width: 0,
+            height: 3,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+
+    featureCardPressed: {
+        opacity: 0.85,
+        transform: [{ scale: 0.98 }],
+    },
+
+    iconContainer: {
+        width: 50,
+        height: 50,
+        marginBottom: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 15,
+        backgroundColor: '#EAF2FF',
+    },
+
+    featureTitle: {
+        width: '100%',
+        color: '#344054',
+        fontSize: 13,
+        lineHeight: 18,
+        fontWeight: '600',
+        textAlign: 'center',
+        flexShrink: 1,
+    },
 });
