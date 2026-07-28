@@ -24,6 +24,7 @@ import Resources from '../screens/Resources';
 import EducationalResources from '../screens/EducationalResources';
 import ChemberEnquiry from '../screens/ChemberEnquiry';
 import Schedule from '../screens/Schedule';
+import CreatedSchedule from '../screens/CreatedSchedule';
 const Stack =
     createNativeStackNavigator<RootStackParamList>();
 
@@ -102,6 +103,10 @@ export default function RootNavigator() {
                         <Stack.Screen
                             name="Schedule"
                             component={Schedule}
+                        />
+                        <Stack.Screen
+                            name="CreateSchedule"
+                            component={CreatedSchedule}
                         />
                     </>
                 ) : (

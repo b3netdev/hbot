@@ -4,8 +4,14 @@ import Schedule from "../assets/schedule.png"
 import Button from '../components/Button'
 import { MoveRight } from 'lucide-react-native'
 import { colors } from '../utils/theme'
+import useAppNavigation from '../hooks/useAppNavigation'
 
 const UpcommingSchedule = () => {
+    const navigation = useAppNavigation()
+
+    const HandleNavigation = () => {
+        navigation.navigate('CreateSchedule')
+    }
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 15 }}>
             <Image source={Schedule} style={{ height: 250, width: 250 }} />
@@ -17,17 +23,17 @@ const UpcommingSchedule = () => {
             </View>
             <Button
                 title='Get Started'
-                style={{borderRadius:10}}
+                style={{ borderRadius: 10 }}
+                onPress={HandleNavigation}
                 buttonColor='gradient'
                 rightIcon={
                     <MoveRight
                         size={21}
                         color={colors.WHITE}
                         strokeWidth={2}
-                        
+
                     />
                 }
-
             />
         </View>
     )

@@ -7,6 +7,7 @@ export type RootStackParamList = {
   EducationalResources: undefined;
   ChemberEnquiry: undefined;
   Schedule: undefined;
+  CreateSchedule:undefined
 };
 
 export type DrawerParamList = {
