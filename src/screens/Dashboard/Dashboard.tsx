@@ -49,7 +49,7 @@ const tabcontent = [
         id: 1,
         icon: CalendarCheck2,
         title: "My Hbot Schedule",
-        path: "Resources"
+        path: "Schedule"
     },
     {
         id: 1,

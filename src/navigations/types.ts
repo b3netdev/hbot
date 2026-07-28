@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Dashboard: undefined;
   Resources: undefined;
   EducationalResources: undefined;
+  ChemberEnquiry: undefined;
+  Schedule: undefined;
 };
 
 export type DrawerParamList = {

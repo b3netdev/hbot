@@ -22,7 +22,8 @@ import { setCredentials } from '../redux/slicers/authSlicer';
 import { colors } from '../utils/theme';
 import Resources from '../screens/Resources';
 import EducationalResources from '../screens/EducationalResources';
-
+import ChemberEnquiry from '../screens/ChemberEnquiry';
+import Schedule from '../screens/Schedule';
 const Stack =
     createNativeStackNavigator<RootStackParamList>();
 
@@ -93,6 +94,14 @@ export default function RootNavigator() {
                         <Stack.Screen
                             name="EducationalResources"
                             component={EducationalResources}
+                        />
+                        <Stack.Screen
+                            name="ChemberEnquiry"
+                            component={ChemberEnquiry}
+                        />
+                        <Stack.Screen
+                            name="Schedule"
+                            component={Schedule}
                         />
                     </>
                 ) : (

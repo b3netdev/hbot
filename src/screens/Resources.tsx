@@ -15,7 +15,7 @@ export default function Resources() {
         },
         {
             title: "Chember Enquiry",
-            path: ""
+            path: "ChemberEnquiry"
         }
     ]
     const HandleNavigation = (data: any) => {
