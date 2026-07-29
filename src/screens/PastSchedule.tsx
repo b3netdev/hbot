@@ -28,11 +28,8 @@ import {
 } from 'lucide-react-native';
 
 import useSchedule from '../hooks/useSchedule';
-import { useAppDispatch, useAppSelector } from '../redux/hooks/hooks';
-import {
-  Schedule as ReduxSchedule,
-  setSchedules,
-} from '../redux/slicers/scheduleSlicer';
+import { useAppSelector } from '../redux/hooks/hooks';
+import { Schedule as ReduxSchedule } from '../redux/slicers/scheduleSlicer';
 import { colors } from '../utils/theme';
 
 const FALLBACK_GRADIENT: [string, string, ...string[]] = [
@@ -71,13 +68,10 @@ type ScheduleApiResult = {
 };
 
 const PastSchedule = () => {
-  const dispatch = useAppDispatch();
   const uid = useAppSelector(state => state.auth.uid);
   const storedSchedules = useAppSelector(
     state => state.schedule?.schedules,
   );
-
-  console.log(storedSchedules, "storedSchedules")
 
   const scheduleList = useMemo<ScheduleListItem[]>(
     () =>
@@ -96,6 +90,9 @@ const PastSchedule = () => {
 
   const [hasLoaded, setHasLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState(
+    Date.now(),
+  );
   const [screenError, setScreenError] = useState<string | null>(
     null,
   );
@@ -134,22 +131,29 @@ const PastSchedule = () => {
         }
       }
     },
-    [
-      clearError,
-      dispatch,
-      getSchedulesByUserId,
-      uid,
-    ],
+    [clearError, getSchedulesByUserId, uid],
   );
 
   useEffect(() => {
     void loadSchedules();
   }, [loadSchedules]);
 
-  const sortedSchedules = useMemo<ScheduleListItem[]>(
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 30_000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const pastSchedules = useMemo<ScheduleListItem[]>(
     () =>
-      [...scheduleList].sort(sortSchedulesNewestFirst),
-    [scheduleList],
+      scheduleList
+        .filter(schedule =>
+          isPastSchedule(schedule, currentTimestamp),
+        )
+        .sort(sortSchedulesNewestFirst),
+    [currentTimestamp, scheduleList],
   );
 
   const renderSchedule: ListRenderItem<ScheduleListItem> =
@@ -198,13 +202,13 @@ const PastSchedule = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={sortedSchedules}
+        data={pastSchedules}
         renderItem={renderSchedule}
         keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.listContent,
-          sortedSchedules.length === 0 &&
+          pastSchedules.length === 0 &&
           styles.emptyListContent,
         ]}
         refreshControl={
@@ -510,7 +514,7 @@ const normalizeSchedule = (
 
 const parseScheduleTimestamp = (
   schedule: ScheduleListItem,
-) => {
+): number | null => {
   const dateMatch = schedule.date?.match(
     /^(\d{1,2})-(\d{1,2})-(\d{4})$/,
   );
@@ -518,14 +522,30 @@ const parseScheduleTimestamp = (
     /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i,
   );
 
-  if (!dateMatch) {
-    return 0;
+  if (!dateMatch || !timeMatch) {
+    return null;
   }
 
   const [, day, month, year] = dateMatch;
-  let hours = timeMatch ? Number(timeMatch[1]) : 0;
-  const minutes = timeMatch ? Number(timeMatch[2]) : 0;
-  const period = timeMatch?.[3]?.toUpperCase();
+  const dayNumber = Number(day);
+  const monthNumber = Number(month);
+  const yearNumber = Number(year);
+  let hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  const period = timeMatch[3].toUpperCase();
+
+  if (
+    dayNumber < 1 ||
+    dayNumber > 31 ||
+    monthNumber < 1 ||
+    monthNumber > 12 ||
+    hours < 1 ||
+    hours > 12 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
 
   if (period === 'PM' && hours !== 12) {
     hours += 12;
@@ -535,21 +555,45 @@ const parseScheduleTimestamp = (
     hours = 0;
   }
 
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
+  const timestamp = new Date(
+    yearNumber,
+    monthNumber - 1,
+    dayNumber,
     hours,
     minutes,
-  ).getTime();
+    0,
+    0,
+  );
+
+  if (
+    timestamp.getFullYear() !== yearNumber ||
+    timestamp.getMonth() !== monthNumber - 1 ||
+    timestamp.getDate() !== dayNumber
+  ) {
+    return null;
+  }
+
+  return timestamp.getTime();
+};
+
+const isPastSchedule = (
+  schedule: ScheduleListItem,
+  currentTimestamp: number,
+): boolean => {
+  const timestamp = parseScheduleTimestamp(schedule);
+
+  return timestamp !== null && timestamp < currentTimestamp;
 };
 
 const sortSchedulesNewestFirst = (
   first: ScheduleListItem,
   second: ScheduleListItem,
-) =>
-  parseScheduleTimestamp(second) -
-  parseScheduleTimestamp(first);
+) => {
+  const firstTimestamp = parseScheduleTimestamp(first) ?? 0;
+  const secondTimestamp = parseScheduleTimestamp(second) ?? 0;
+
+  return secondTimestamp - firstTimestamp;
+};
 
 const ICON_PROPS = {
   size: 18,
