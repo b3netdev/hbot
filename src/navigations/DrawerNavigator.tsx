@@ -114,14 +114,14 @@ const CustomDrawerContent = (
 ) => {
   const dispatch = useAppDispatch();
   const {user} = useAppSelector(state => state.auth);
+  console.log(user,"This is user data")
 
   const [loggingOut, setLoggingOut] = useState(false);
 
   const authUser = user as any;
 
   const displayName =
-    authUser?.full_name?.trim() ||
-    authUser?.display_name?.trim() ||
+    `${authUser?.first_name?.trim()} ${authUser?.last_name?.trim() }`||
     'HBOT Member';
 
   const email =
