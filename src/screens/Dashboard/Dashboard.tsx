@@ -17,6 +17,8 @@ import Banner2 from "../../assets/banner-2.png"
 import { colors } from '../../utils/theme';
 import { Bot, CalendarCheck2, LifeBuoy, Navigation } from 'lucide-react-native';
 import useAppNavigation from '../../hooks/useAppNavigation';
+import { useAppSelector } from '../../redux/hooks/hooks';
+import useUser from '../../hooks/useUser';
 type Banner = {
     id: number;
     image: ImageSourcePropType;
@@ -62,6 +64,8 @@ const tabcontent = [
 export default function Dashboard() {
     const { width } = useWindowDimensions();
     const flatListRef = useRef<FlatList<Banner>>(null);
+    const { uid, user } = useAppSelector(state => state.auth)
+    const { getUserDetails, loading } = useUser()
 
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -69,6 +73,13 @@ export default function Dashboard() {
     const snapInterval = bannerWidth + BANNER_GAP;
     const navigation = useAppNavigation()
 
+    useEffect(() => {
+        const getusers = async () => {
+            if (!uid) return
+            await getUserDetails(uid)
+        }
+        getusers()
+    }, [uid])
 
     useEffect(() => {
         if (bannerArray.length <= 1) {

@@ -290,7 +290,7 @@ export default function Signin({
                 ]}>
                 <LinearGradient
                   colors={[...colors.GRADIENT]}
-                  locations={[0, 0.65, 1]}
+          
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.gradient}>

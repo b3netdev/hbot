@@ -38,6 +38,7 @@ export default function useAuth() {
             });
 
             const data = response.data;
+            console.log(data,"DATA")
 
             if (data?.action === 'success') {
                 const uid = String(data.user.user_id);

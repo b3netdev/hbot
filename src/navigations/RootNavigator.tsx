@@ -125,10 +125,7 @@ export default function RootNavigator() {
                             name="SignUp"
                             component={SignUp}
                         />
-                        <Stack.Screen
-                            name="SignUp"
-                            component={SignUp}
-                        />
+                        
                     </>
                 )}
             </Stack.Navigator>

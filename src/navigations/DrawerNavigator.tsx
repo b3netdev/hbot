@@ -24,7 +24,7 @@ export default function DrawerNavigator() {
                 headerStatusBarHeight: 60,
                 headerTitleAlign: 'left',
                 headerTintColor: colors.WHITE,
-                headerTitle: () => null,
+                // headerTitle: () => null,
 
                 headerBackground: () => (
                     <LinearGradient
