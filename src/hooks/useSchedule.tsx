@@ -5,7 +5,7 @@ import { useAppDispatch } from '../redux/hooks/hooks';
 import { setSchedules } from '../redux/slicers/scheduleSlicer';
 
 export type AddScheduleParams = {
-  action: 'insert_scheduling';
+  action: string;
   user_id: string;
   date: string;
   time: string;

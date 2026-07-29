@@ -7,7 +7,10 @@ export type RootStackParamList = {
   EducationalResources: undefined;
   ChemberEnquiry: undefined;
   Schedule: undefined;
-  CreateSchedule:undefined
+  CreateSchedule: {
+    scheduleType: 'insert_scheduling' | 'update_scheduling';
+  };
+  ChatScreen: undefined;
 };
 
 export type DrawerParamList = {

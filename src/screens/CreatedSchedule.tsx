@@ -33,6 +33,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import LinearGradient from 'react-native-linear-gradient';
 import useAppNavigation from '../hooks/useAppNavigation';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import {
     CalendarDays,
     Check,
@@ -46,7 +47,14 @@ import { useAppSelector } from '../redux/hooks/hooks';
 import useSchedule from '../hooks/useSchedule';
 import type { AddScheduleParams } from '../hooks/useSchedule';
 import { colors } from '../utils/theme';
+import { RootStackParamList } from '../navigations/types';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+
+type Props = NativeStackScreenProps<
+    RootStackParamList,
+    'CreateSchedule'
+>;
 const GRADIENT_COLORS = ['#1264E4', '#18CFAB'] as const;
 
 const TREATMENT_NUMBERS = Array.from(
@@ -138,7 +146,7 @@ const validationSchema = Yup.object({
         .max(1000, 'Comments cannot exceed 1,000 characters'),
 });
 
-const CreatedSchedule = () => {
+const CreatedSchedule = ({ route }: Props) => {
     const scrollViewRef = useRef<ScrollView>(null);
     const focusTimerRef =
         useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -150,6 +158,10 @@ const CreatedSchedule = () => {
     const uid = useAppSelector(state => state.auth.uid);
     const userId = uid == null ? '' : String(uid);
     const navigation = useAppNavigation()
+    const { scheduleType } = route.params;
+
+
+    const { } = route.params;
 
     const {
         addSchedule,
@@ -208,7 +220,7 @@ const CreatedSchedule = () => {
             clearError();
 
             const params: AddScheduleParams = {
-                action: 'insert_scheduling',
+                action: `${scheduleType}`,
                 user_id: userId,
                 date: formatApiDate(values.date),
                 time: formatApiTime(values.time),

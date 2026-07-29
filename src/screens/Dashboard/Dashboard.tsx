@@ -43,7 +43,7 @@ const tabcontent = [
         id: 1,
         icon: Bot,
         title: "My HBOT Companion",
-        path: "Resources"
+        path: "ChatScreen"
     },
     {
         id: 1,
