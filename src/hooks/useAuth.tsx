@@ -38,8 +38,6 @@ export default function useAuth() {
             });
 
             const data = response.data;
-            console.log(data,"DATA")
-
             if (data?.action === 'success') {
                 const uid = String(data.user.user_id);
 
@@ -66,6 +64,81 @@ export default function useAuth() {
         }
     };
 
+
+    const forgotPassword = async (email: string) => {
+        try {
+            const res = await api.get('services.php', {
+                params: {
+                    action: 'forgot_password',
+                    email: email.trim().toLowerCase(),
+                },
+            })
+            const data = res.data
+            if (data.action == 'success') {
+                return data
+            }
+            else {
+                return null
+            }
+
+        }
+        catch (error) {
+            throw error;
+        }
+        finally {
+
+        }
+    }
+
+
+    type ResetPasswordParams = {
+        email: string;
+        key: string;
+        password: string;
+    };
+
+    const resetPassword = async ({
+        email,
+        key,
+        password,
+    }: ResetPasswordParams): Promise<any> => {
+        if (!/^\d{6}$/.test(key.trim())) {
+            throw new Error('Please enter a valid six-digit verification code.');
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await api.get<any>('services.php', {
+                params: {
+                    action: 'reset_password',
+                    email: email.trim().toLowerCase(),
+                    key: key.trim(),
+                    password,
+                },
+            });
+
+            const data = response.data;
+
+            if (data?.action !== 'success') {
+                throw new Error(
+                    data?.message ||
+                    'Your password could not be reset. Please try again.',
+                );
+            }
+
+            return data;
+        } catch (error: any) {
+            throw new Error(
+                error?.response?.data?.message ||
+                error?.message ||
+                'Something went wrong while resetting your password. Please try again.',
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const HandleLogout = async () => {
         await Promise.all([
             AsyncStorage.removeItem('uid'),
@@ -75,10 +148,15 @@ export default function useAuth() {
         dispatch(clearCredentials());
     };
 
+
+
+
     return {
         HandleSignUp,
         HandleSignIn,
         HandleLogout,
         loading,
+        forgotPassword,
+        resetPassword
     };
 }

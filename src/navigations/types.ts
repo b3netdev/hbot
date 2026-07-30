@@ -11,7 +11,8 @@ export type RootStackParamList = {
     scheduleType: 'insert_scheduling' | 'update_scheduling';
   };
   ChatScreen: undefined;
-  ForgotPassword:undefined
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
 };
 
 export type DrawerParamList = {
