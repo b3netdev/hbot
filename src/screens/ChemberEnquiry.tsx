@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,6 +19,7 @@ import * as Yup from "yup";
 import Button from "../components/Button";
 import Header from "../components/Header";
 import { colors } from "../utils/theme";
+import api from "../utils/Api";
 
 type SelectOption = {
   label: string;
@@ -29,7 +31,7 @@ export type ChamberInquiryFormValues = {
   email: string;
   phone: string;
   your_company: string;
-  street: string;
+  address: string;
   city: string;
   state: string;
   postcode: string;
@@ -98,7 +100,7 @@ const initialValues: ChamberInquiryFormValues = {
   email: "",
   phone: "",
   your_company: "",
-  street: "",
+  address: "",
   city: "",
   state: "",
   postcode: "",
@@ -133,9 +135,9 @@ const validationSchema = Yup.object({
       return digitCount >= 7 && digitCount <= 15;
     }),
   your_company: Yup.string().trim().max(100, "Company name is too long"),
-  street: Yup.string()
+  address: Yup.string()
     .trim()
-    .min(3, "Enter a valid street address")
+    .min(3, "Enter a valid address address")
     .max(150, "Street address is too long")
     .required("Street address is required"),
   city: Yup.string()
@@ -210,7 +212,7 @@ export default function ChamberInquiryScreen() {
           email: values.email.trim().toLowerCase(),
           phone: values.phone.trim(),
           your_company: values.your_company.trim(),
-          street: values.street.trim(),
+          address: values.address.trim(),
           city: values.city.trim(),
           state: values.state.trim(),
           postcode: values.postcode.trim(),
@@ -218,11 +220,28 @@ export default function ChamberInquiryScreen() {
           your_comments: values.your_comments.trim(),
         };
 
-        
-        // await api.post('/chamber-inquiry', payload);
-        console.log("Chamber inquiry payload:", payload);
 
-        resetForm();
+        const response = await api.post(
+          'services.php',
+          {},
+          {
+            params: {
+              action: 'chamber_inquiry',
+              ...payload,
+              number_of_users: payload.number_of_users.join(','),
+            },
+          },
+        );
+        const data = response.data;
+        if (data?.action == 'success') {
+          console.log("KKK")
+          Alert.alert(
+            'Success',
+            data?.message || 'The operation was completed successfully.',
+          );
+        }
+
+        // resetForm();
       } catch (error) {
         console.error("Unable to submit chamber inquiry:", error);
       } finally {
@@ -327,10 +346,10 @@ export default function ChamberInquiryScreen() {
             <FormInput
               label="Address"
               required
-              value={formik.values.street}
-              onChangeText={formik.handleChange("street")}
-              onBlur={formik.handleBlur("street")}
-              error={getError(formik.touched.street, formik.errors.street)}
+              value={formik.values.address}
+              onChangeText={formik.handleChange("address")}
+              onBlur={formik.handleBlur("address")}
+              error={getError(formik.touched.address, formik.errors.address)}
               autoCapitalize="words"
               textContentType="streetAddressLine1"
               autoComplete="street-address"
