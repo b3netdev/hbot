@@ -25,22 +25,22 @@ type SelectOption = {
 };
 
 export type ChamberInquiryFormValues = {
-  fullName: string;
+  full_name: string;
   email: string;
-  phoneNumber: string;
-  companyName: string;
+  phone: string;
+  your_company: string;
   street: string;
   city: string;
   state: string;
-  postalCode: string;
+  postcode: string;
   country: string;
-  chamberType: string;
-  intendedUse: string;
-  numberOfUsers: string[];
-  budgetRange: string;
-  purchaseTimeframe: string;
-  hearAboutUs: string;
-  comments: string;
+  chamber_type: string;
+  your_intended_use: string;
+  number_of_users: string[];
+  your_budget_range: string;
+  your_purchase_timeframe: string;
+  your_hear_about_us: string;
+  your_comments: string;
 };
 
 const CHAMBER_OPTIONS: SelectOption[] = [
@@ -94,26 +94,26 @@ const REFERRAL_OPTIONS: SelectOption[] = [
 ];
 
 const initialValues: ChamberInquiryFormValues = {
-  fullName: "",
+  full_name: "",
   email: "",
-  phoneNumber: "",
-  companyName: "",
+  phone: "",
+  your_company: "",
   street: "",
   city: "",
   state: "",
-  postalCode: "",
+  postcode: "",
   country: "",
-  chamberType: "",
-  intendedUse: "",
-  numberOfUsers: [],
-  budgetRange: "",
-  purchaseTimeframe: "",
-  hearAboutUs: "",
-  comments: "",
+  chamber_type: "",
+  your_intended_use: "",
+  number_of_users: [],
+  your_budget_range: "",
+  your_purchase_timeframe: "",
+  your_hear_about_us: "",
+  your_comments: "",
 };
 
 const validationSchema = Yup.object({
-  fullName: Yup.string()
+  full_name: Yup.string()
     .trim()
     .min(2, "Enter at least 2 characters")
     .max(80, "Full name is too long")
@@ -122,7 +122,7 @@ const validationSchema = Yup.object({
     .trim()
     .email("Enter a valid email address")
     .required("Email is required"),
-  phoneNumber: Yup.string()
+  phone: Yup.string()
     .required("Phone number is required")
     .test("valid-phone-number", "Enter a valid phone number", (value) => {
       if (!value) {
@@ -132,7 +132,7 @@ const validationSchema = Yup.object({
       const digitCount = value.replace(/\D/g, "").length;
       return digitCount >= 7 && digitCount <= 15;
     }),
-  companyName: Yup.string().trim().max(100, "Company name is too long"),
+  your_company: Yup.string().trim().max(100, "Company name is too long"),
   street: Yup.string()
     .trim()
     .min(3, "Enter a valid street address")
@@ -146,7 +146,7 @@ const validationSchema = Yup.object({
     .trim()
     .max(80, "State name is too long")
     .required("State is required"),
-  postalCode: Yup.string()
+  postcode: Yup.string()
     .trim()
     .matches(
       /^[A-Za-z0-9][A-Za-z0-9 -]{2,11}$/,
@@ -157,43 +157,43 @@ const validationSchema = Yup.object({
     .trim()
     .max(80, "Country name is too long")
     .required("Country is required"),
-  chamberType: Yup.string()
+  chamber_type: Yup.string()
     .oneOf(
       CHAMBER_OPTIONS.map((option) => option.value),
       "Select a valid chamber type",
     )
     .required("Chamber type is required"),
-  intendedUse: Yup.string()
+  your_intended_use: Yup.string()
     .oneOf(
       INTENDED_USE_OPTIONS.map((option) => option.value),
       "Select a valid intended use",
     )
     .required("Intended use is required"),
-  numberOfUsers: Yup.array()
+  number_of_users: Yup.array()
     .of(Yup.string().oneOf(USER_OPTIONS.map((option) => option.value)))
     .min(1, "Select at least one option")
     .required(),
-  budgetRange: Yup.string()
+  your_budget_range: Yup.string()
     .oneOf(
       BUDGET_OPTIONS.map((option) => option.value),
       "Select a valid budget range",
     )
     .required("Budget range is required"),
-  purchaseTimeframe: Yup.string()
+  your_purchase_timeframe: Yup.string()
     .oneOf(
       TIMEFRAME_OPTIONS.map((option) => option.value),
       "Select a valid purchase timeframe",
     )
     .required("Purchase timeframe is required"),
-  hearAboutUs: Yup.string()
+  your_hear_about_us: Yup.string()
     .oneOf(
       REFERRAL_OPTIONS.map((option) => option.value),
       "Select a valid option",
     )
     .required("Please select an option"),
-  comments: Yup.string()
+  your_comments: Yup.string()
     .trim()
-    .max(1000, "Questions or comments cannot exceed 1,000 characters"),
+    .max(1000, "Questions or your_comments cannot exceed 1,000 characters"),
 });
 
 export default function ChamberInquiryScreen() {
@@ -206,19 +206,19 @@ export default function ChamberInquiryScreen() {
       try {
         const payload = {
           ...values,
-          fullName: values.fullName.trim(),
+          full_name: values.full_name.trim(),
           email: values.email.trim().toLowerCase(),
-          phoneNumber: values.phoneNumber.trim(),
-          companyName: values.companyName.trim(),
+          phone: values.phone.trim(),
+          your_company: values.your_company.trim(),
           street: values.street.trim(),
           city: values.city.trim(),
           state: values.state.trim(),
-          postalCode: values.postalCode.trim(),
+          postcode: values.postcode.trim(),
           country: values.country.trim(),
-          comments: values.comments.trim(),
+          your_comments: values.your_comments.trim(),
         };
 
-        // Connect your API here:
+        
         // await api.post('/chamber-inquiry', payload);
         console.log("Chamber inquiry payload:", payload);
 
@@ -232,13 +232,13 @@ export default function ChamberInquiryScreen() {
   });
 
   const toggleUserOption = (value: string) => {
-    const currentValues = formik.values.numberOfUsers;
+    const currentValues = formik.values.number_of_users;
     const nextValues = currentValues.includes(value)
       ? currentValues.filter((item) => item !== value)
       : [...currentValues, value];
 
-    void formik.setFieldValue("numberOfUsers", nextValues, true);
-    formik.setFieldTouched("numberOfUsers", true, false);
+    void formik.setFieldValue("number_of_users", nextValues, true);
+    formik.setFieldTouched("number_of_users", true, false);
   };
 
   return (
@@ -267,10 +267,10 @@ export default function ChamberInquiryScreen() {
             <FormInput
               label="Full Name"
               required
-              value={formik.values.fullName}
-              onChangeText={formik.handleChange("fullName")}
-              onBlur={formik.handleBlur("fullName")}
-              error={getError(formik.touched.fullName, formik.errors.fullName)}
+              value={formik.values.full_name}
+              onChangeText={formik.handleChange("full_name")}
+              onBlur={formik.handleBlur("full_name")}
+              error={getError(formik.touched.full_name, formik.errors.full_name)}
               autoCapitalize="words"
               textContentType="name"
               autoComplete="name"
@@ -295,12 +295,12 @@ export default function ChamberInquiryScreen() {
             <FormInput
               label="Phone Number"
               required
-              value={formik.values.phoneNumber}
-              onChangeText={formik.handleChange("phoneNumber")}
-              onBlur={formik.handleBlur("phoneNumber")}
+              value={formik.values.phone}
+              onChangeText={formik.handleChange("phone")}
+              onBlur={formik.handleBlur("phone")}
               error={getError(
-                formik.touched.phoneNumber,
-                formik.errors.phoneNumber,
+                formik.touched.phone,
+                formik.errors.phone,
               )}
               keyboardType="phone-pad"
               textContentType="telephoneNumber"
@@ -311,12 +311,12 @@ export default function ChamberInquiryScreen() {
             <FormInput
               label="Company Name"
               helperText="Optional"
-              value={formik.values.companyName}
-              onChangeText={formik.handleChange("companyName")}
-              onBlur={formik.handleBlur("companyName")}
+              value={formik.values.your_company}
+              onChangeText={formik.handleChange("your_company")}
+              onBlur={formik.handleBlur("your_company")}
               error={getError(
-                formik.touched.companyName,
-                formik.errors.companyName,
+                formik.touched.your_company,
+                formik.errors.your_company,
               )}
               autoCapitalize="words"
               textContentType="organizationName"
@@ -325,7 +325,7 @@ export default function ChamberInquiryScreen() {
             />
 
             <FormInput
-              label="Street Address"
+              label="Address"
               required
               value={formik.values.street}
               onChangeText={formik.handleChange("street")}
@@ -374,15 +374,14 @@ export default function ChamberInquiryScreen() {
                 <FormInput
                   label="ZIP / Postal Code"
                   required
-                  value={formik.values.postalCode}
-                  onChangeText={formik.handleChange("postalCode")}
-                  onBlur={formik.handleBlur("postalCode")}
+                  value={formik.values.postcode}
+                  onChangeText={formik.handleChange("postcode")}
+                  onBlur={formik.handleBlur("postcode")}
                   error={getError(
-                    formik.touched.postalCode,
-                    formik.errors.postalCode,
+                    formik.touched.postcode,
+                    formik.errors.postcode,
                   )}
                   autoCapitalize="characters"
-                  textContentType="postalCode"
                   autoComplete="postal-code"
                   returnKeyType="next"
                 />
@@ -413,15 +412,15 @@ export default function ChamberInquiryScreen() {
               label="Type of Hyperbaric Chamber Interested In"
               required
               placeholder="Select a chamber type"
-              value={formik.values.chamberType}
+              value={formik.values.chamber_type}
               options={CHAMBER_OPTIONS}
               error={getError(
-                formik.touched.chamberType,
-                formik.errors.chamberType,
+                formik.touched.chamber_type,
+                formik.errors.chamber_type,
               )}
               onSelect={(value) => {
-                void formik.setFieldValue("chamberType", value, true);
-                formik.setFieldTouched("chamberType", true, false);
+                void formik.setFieldValue("chamber_type", value, true);
+                formik.setFieldTouched("chamber_type", true, false);
               }}
             />
 
@@ -429,27 +428,27 @@ export default function ChamberInquiryScreen() {
               label="Intended Use"
               required
               placeholder="Select intended use"
-              value={formik.values.intendedUse}
+              value={formik.values.your_intended_use}
               options={INTENDED_USE_OPTIONS}
               error={getError(
-                formik.touched.intendedUse,
-                formik.errors.intendedUse,
+                formik.touched.your_intended_use,
+                formik.errors.your_intended_use,
               )}
               onSelect={(value) => {
-                void formik.setFieldValue("intendedUse", value, true);
-                formik.setFieldTouched("intendedUse", true, false);
+                void formik.setFieldValue("your_intended_use", value, true);
+                formik.setFieldTouched("your_intended_use", true, false);
               }}
             />
 
             <CheckboxGroup
               label="Number of Users"
               required
-              values={formik.values.numberOfUsers}
+              values={formik.values.number_of_users}
               options={USER_OPTIONS}
               error={getError(
-                formik.touched.numberOfUsers,
-                typeof formik.errors.numberOfUsers === "string"
-                  ? formik.errors.numberOfUsers
+                formik.touched.number_of_users,
+                typeof formik.errors.number_of_users === "string"
+                  ? formik.errors.number_of_users
                   : undefined,
               )}
               onToggle={toggleUserOption}
@@ -461,15 +460,15 @@ export default function ChamberInquiryScreen() {
               label="Budget Range"
               required
               placeholder="Select budget range"
-              value={formik.values.budgetRange}
+              value={formik.values.your_budget_range}
               options={BUDGET_OPTIONS}
               error={getError(
-                formik.touched.budgetRange,
-                formik.errors.budgetRange,
+                formik.touched.your_budget_range,
+                formik.errors.your_budget_range,
               )}
               onSelect={(value) => {
-                void formik.setFieldValue("budgetRange", value, true);
-                formik.setFieldTouched("budgetRange", true, false);
+                void formik.setFieldValue("your_budget_range", value, true);
+                formik.setFieldTouched("your_budget_range", true, false);
               }}
             />
 
@@ -477,15 +476,15 @@ export default function ChamberInquiryScreen() {
               label="Preferred Purchase Timeframe"
               required
               placeholder="Select a timeframe"
-              value={formik.values.purchaseTimeframe}
+              value={formik.values.your_purchase_timeframe}
               options={TIMEFRAME_OPTIONS}
               error={getError(
-                formik.touched.purchaseTimeframe,
-                formik.errors.purchaseTimeframe,
+                formik.touched.your_purchase_timeframe,
+                formik.errors.your_purchase_timeframe,
               )}
               onSelect={(value) => {
-                void formik.setFieldValue("purchaseTimeframe", value, true);
-                formik.setFieldTouched("purchaseTimeframe", true, false);
+                void formik.setFieldValue("your_purchase_timeframe", value, true);
+                formik.setFieldTouched("your_purchase_timeframe", true, false);
               }}
             />
           </FormSection>
@@ -495,25 +494,25 @@ export default function ChamberInquiryScreen() {
               label="How Did You Hear About Us?"
               required
               placeholder="Select an option"
-              value={formik.values.hearAboutUs}
+              value={formik.values.your_hear_about_us}
               options={REFERRAL_OPTIONS}
               error={getError(
-                formik.touched.hearAboutUs,
-                formik.errors.hearAboutUs,
+                formik.touched.your_hear_about_us,
+                formik.errors.your_hear_about_us,
               )}
               onSelect={(value) => {
-                void formik.setFieldValue("hearAboutUs", value, true);
-                formik.setFieldTouched("hearAboutUs", true, false);
+                void formik.setFieldValue("your_hear_about_us", value, true);
+                formik.setFieldTouched("your_hear_about_us", true, false);
               }}
             />
 
             <FormInput
               label="Questions or Comments"
               helperText="Optional"
-              value={formik.values.comments}
-              onChangeText={formik.handleChange("comments")}
-              onBlur={formik.handleBlur("comments")}
-              error={getError(formik.touched.comments, formik.errors.comments)}
+              value={formik.values.your_comments}
+              onChangeText={formik.handleChange("your_comments")}
+              onBlur={formik.handleBlur("your_comments")}
+              error={getError(formik.touched.your_comments, formik.errors.your_comments)}
               multiline
               numberOfLines={5}
               maxLength={1000}
@@ -523,7 +522,7 @@ export default function ChamberInquiryScreen() {
             />
 
             <Text style={styles.characterCount}>
-              {formik.values.comments.length}/1,000
+              {formik.values.your_comments.length}/1,000
             </Text>
           </FormSection>
 
