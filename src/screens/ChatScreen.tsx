@@ -13,11 +13,22 @@ import {
 } from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { Bot, CheckCheck, Send, UserRound } from "lucide-react-native";
+import OpenAI from "openai";
+import {
+  Bot,
+  CheckCheck,
+  CircleAlert,
+  RefreshCw,
+  Send,
+  UserRound,
+  X,
+} from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppSelector } from "../redux/hooks/hooks";
 
 import Header from "../components/Header";
 import { colors } from "../utils/theme";
+import api from "../utils/Api";
 
 type MessageSender = "companion" | "user";
 
@@ -26,6 +37,25 @@ type ChatMessage = {
   message: string;
   sender: MessageSender;
   createdAt: number;
+  status?: "sending" | "sent" | "failed";
+};
+
+type ChatApiResponse = {
+  action?: string;
+  success?: boolean;
+  message?: unknown;
+  reply?: unknown;
+  response?: unknown;
+  answer?: unknown;
+  content?: unknown;
+  output_text?: unknown;
+  assistant_message?: unknown;
+  data?: unknown;
+};
+
+type FailedRequest = {
+  messageId: string;
+  message: string;
 };
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -50,6 +80,85 @@ const formatMessageTime = (timestamp: number): string => {
 
 const createMessageId = (): string =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+const getNonEmptyString = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() ? value.trim() : null;
+
+const getNestedResponseValue = (value: unknown, key: string): unknown => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  return (value as Record<string, unknown>)[key];
+};
+
+const getAssistantReply = (data: ChatApiResponse | string): string => {
+  if (typeof data === "string") {
+    const directReply = getNonEmptyString(data);
+
+    if (directReply) {
+      return directReply;
+    }
+  }
+
+  if (!data || typeof data !== "object") {
+    throw new Error("The companion returned an empty response.");
+  }
+
+  const nestedData = data.data;
+  const candidates: unknown[] = [
+    data.reply,
+    data.response,
+    data.answer,
+    data.content,
+    data.output_text,
+    data.assistant_message,
+    getNestedResponseValue(nestedData, "reply"),
+    getNestedResponseValue(nestedData, "response"),
+    getNestedResponseValue(nestedData, "answer"),
+    getNestedResponseValue(nestedData, "content"),
+    getNestedResponseValue(nestedData, "output_text"),
+    getNestedResponseValue(nestedData, "message"),
+    data.message,
+  ];
+
+  for (const candidate of candidates) {
+    const reply = getNonEmptyString(candidate);
+
+    if (reply) {
+      return reply;
+    }
+  }
+
+  throw new Error("The companion returned an empty response.");
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error && typeof error === "object") {
+    const response = (error as Record<string, unknown>).response;
+    const responseData = getNestedResponseValue(response, "data");
+    const apiMessage = getNonEmptyString(
+      getNestedResponseValue(responseData, "message"),
+    );
+
+    if (apiMessage) {
+      return apiMessage;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "I couldn’t reach your HBOT Companion. Please try again.";
+};
+
+const isCanceledRequest = (error: unknown): boolean =>
+  Boolean(
+    error &&
+      typeof error === "object" &&
+      (error as Record<string, unknown>).code === "ERR_CANCELED",
+  );
 
 const TypingIndicator = () => {
   const dotValues = useRef([
@@ -134,12 +243,18 @@ const ChatScreen = () => {
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
-  const replyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
 
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [failedRequest, setFailedRequest] = useState<FailedRequest | null>(
+    null,
+  );
+  const { uid } = useAppSelector((state) => state.auth);
 
   const scrollToLatestMessage = useCallback((animated = true) => {
     requestAnimationFrame(() => {
@@ -149,9 +264,8 @@ const ChatScreen = () => {
 
   useEffect(() => {
     return () => {
-      if (replyTimeoutRef.current) {
-        clearTimeout(replyTimeoutRef.current);
-      }
+      isMountedRef.current = false;
+      abortControllerRef.current?.abort();
     };
   }, []);
 
@@ -183,6 +297,100 @@ const ChatScreen = () => {
     scrollToLatestMessage();
   }, [isTyping, messages, scrollToLatestMessage]);
 
+  const requestCompanionReply = useCallback(
+    async (message: string, messageId: string) => {
+      if (!uid) {
+        setMessages((currentMessages) =>
+          currentMessages.map((item) =>
+            item.id === messageId ? { ...item, status: "failed" } : item,
+          ),
+        );
+        setFailedRequest({ messageId, message });
+        setRequestError("Your session has expired. Please sign in again.");
+        return;
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      setIsTyping(true);
+      setRequestError(null);
+      setFailedRequest(null);
+      setMessages((currentMessages) =>
+        currentMessages.map((item) =>
+          item.id === messageId ? { ...item, status: "sending" } : item,
+        ),
+      );
+
+      try {
+        const response = await api.post<ChatApiResponse | string>(
+          "services.php",
+          { message },
+          {
+            params: {
+              action: "chat_bot",
+              user_id: uid,
+              message
+            },
+            signal: controller.signal,
+          },
+        );
+
+        const data = response.data;
+
+        if (
+          typeof data === "object" &&
+          data !== null &&
+          (data.success === false ||
+            (Boolean(data.action) && data.action !== "success"))
+        ) {
+          throw new Error(
+            getNonEmptyString(data.message) ||
+              "Your message could not be processed. Please try again.",
+          );
+        }
+
+        const reply = getAssistantReply(data);
+
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        setMessages((currentMessages) => [
+          ...currentMessages.map((item) =>
+            item.id === messageId ? { ...item, status: "sent" as const } : item,
+          ),
+          {
+            id: createMessageId(),
+            message: reply,
+            sender: "companion",
+            createdAt: Date.now(),
+          },
+        ]);
+      } catch (error: unknown) {
+        if (isCanceledRequest(error) || !isMountedRef.current) {
+          return;
+        }
+
+        setMessages((currentMessages) =>
+          currentMessages.map((item) =>
+            item.id === messageId ? { ...item, status: "failed" } : item,
+          ),
+        );
+        setFailedRequest({ messageId, message });
+        setRequestError(getErrorMessage(error));
+      } finally {
+        if (isMountedRef.current) {
+          setIsTyping(false);
+        }
+
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
+      }
+    },
+    [uid],
+  );
+
   const handleSend = useCallback(() => {
     const message = inputMessage.trim();
 
@@ -190,43 +398,32 @@ const ChatScreen = () => {
       return;
     }
 
+    const messageId = createMessageId();
     const newMessage: ChatMessage = {
-      id: createMessageId(),
+      id: messageId,
       message,
       sender: "user",
       createdAt: Date.now(),
+      status: "sending",
     };
 
     setMessages((currentMessages) => [...currentMessages, newMessage]);
     setInputMessage("");
-    setIsTyping(true);
+    setRequestError(null);
+    setFailedRequest(null);
     scrollToLatestMessage();
-
-    // Keep the keyboard open so the user can send another message.
     inputRef.current?.focus();
 
-    /*
-     * Replace this timeout with your chat API or custom hook.
-     *
-     * Example:
-     * const reply = await sendChatMessage(message);
-     * setIsTyping(false);
-     * appendCompanionMessage(reply);
-     */
-    replyTimeoutRef.current = setTimeout(() => {
-      const companionReply: ChatMessage = {
-        id: createMessageId(),
-        message:
-          "Thanks for sharing that. I’m here to help you stay informed and organized throughout your HBOT journey.",
-        sender: "companion",
-        createdAt: Date.now(),
-      };
+    void requestCompanionReply(message, messageId);
+  }, [inputMessage, isTyping, requestCompanionReply, scrollToLatestMessage]);
 
-      setMessages((currentMessages) => [...currentMessages, companionReply]);
-      setIsTyping(false);
-      replyTimeoutRef.current = null;
-    }, 1800);
-  }, [inputMessage, isTyping, scrollToLatestMessage]);
+  const handleRetry = useCallback(() => {
+    if (!failedRequest || isTyping) {
+      return;
+    }
+
+    void requestCompanionReply(failedRequest.message, failedRequest.messageId);
+  }, [failedRequest, isTyping, requestCompanionReply]);
 
   const renderMessage = useCallback(
     ({ item }: ListRenderItemInfo<ChatMessage>) => {
@@ -290,9 +487,11 @@ const ChatScreen = () => {
                 {formatMessageTime(item.createdAt)}
               </Text>
 
-              {isUserMessage && (
+              {isUserMessage && item.status === "failed" ? (
+                <CircleAlert size={13} color="#D92D20" strokeWidth={2} />
+              ) : isUserMessage && item.status === "sent" ? (
                 <CheckCheck size={13} color="#7B8A9C" strokeWidth={2} />
-              )}
+              ) : null}
             </View>
           </View>
 
@@ -360,6 +559,47 @@ const ChatScreen = () => {
             },
           ]}
         >
+          {requestError ? (
+            <View
+              style={styles.errorBanner}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="assertive"
+            >
+              <CircleAlert size={18} color="#B42318" strokeWidth={2} />
+              <Text style={styles.errorText}>{requestError}</Text>
+
+              {failedRequest ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry sending message"
+                  disabled={isTyping}
+                  onPress={handleRetry}
+                  hitSlop={6}
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    pressed && styles.errorActionPressed,
+                  ]}
+                >
+                  <RefreshCw size={15} color="#B42318" strokeWidth={2.2} />
+                  <Text style={styles.retryText}>Retry</Text>
+                </Pressable>
+              ) : null}
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss error"
+                onPress={() => setRequestError(null)}
+                hitSlop={8}
+                style={({ pressed }) => [
+                  styles.dismissErrorButton,
+                  pressed && styles.errorActionPressed,
+                ]}
+              >
+                <X size={16} color="#8A2C23" strokeWidth={2.2} />
+              </Pressable>
+            </View>
+          ) : null}
+
           <View style={styles.composer}>
             <TextInput
               ref={inputRef}
@@ -375,6 +615,7 @@ const ChatScreen = () => {
               submitBehavior="submit"
               onSubmitEditing={handleSend}
               accessibilityLabel="Chat message"
+              accessibilityHint="Enter a message for your HBOT Companion"
             />
 
             <Pressable
@@ -406,7 +647,7 @@ const ChatScreen = () => {
           </View>
 
           <Text style={styles.helperText}>
-            Your companion can provide guidance, not emergency medical care.
+            For emergencies, call 911 or go to the nearest emergency room.
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -605,6 +846,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DEE5ED",
     borderRadius: 26,
+  },
+  errorBanner: {
+    minHeight: 48,
+    marginBottom: 9,
+    paddingVertical: 9,
+    paddingLeft: 11,
+    paddingRight: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF3F2",
+    borderWidth: 1,
+    borderColor: "#FECDCA",
+    borderRadius: 13,
+  },
+  errorText: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#912018",
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "500",
+  },
+  retryButton: {
+    minHeight: 32,
+    marginLeft: 8,
+    paddingHorizontal: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: "#B42318",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  dismissErrorButton: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+  },
+  errorActionPressed: {
+    opacity: 0.55,
   },
   input: {
     flex: 1,

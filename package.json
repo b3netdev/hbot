@@ -21,6 +21,7 @@
     "axios": "^1.18.1",
     "formik": "^2.4.9",
     "lucide-react-native": "^1.25.0",
+    "openai": "^7.2.0",
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-config": "^1.6.1",
